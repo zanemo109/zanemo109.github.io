@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 1: Images of the Russian Empire - Zane Mogannam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+        
+        <header class="header">
+            <h1>Project 1: Images of the Russian Empire</h1>
+            <p class="subtitle">Colorizing the Prokudin-Gorskii Photo Collection</p>
+        </header>
+
+        <div class="section">
+            <h2>Overview</h2>
+            <p>This project takes digitized Prokudin-Gorskii glass plate images and automatically produces color images using image processing techniques. Sergei Mikhailovich Prokudin-Gorskii (1863-1944) was a pioneering photographer who captured the Russian Empire in color by recording three exposures of every scene using red, green, and blue filters.</p>
+            
+            <p>The goal was to extract the three color channel images, align them properly, and combine them into a single RGB color image with minimal visual artifacts. The algorithm needed to handle both small JPG files and large TIF files efficiently using different alignment strategies.</p>
+        </div>
+
+        <div class="section">
+            <h2>Algorithm Overview</h2>
+            <p>My implementation uses a two-tiered approach based on image size and computational requirements:</p>
+            <ul>
+                <li><strong>Single-scale alignment:</strong> For smaller JPG images (~400x300 pixels), exhaustive search over all possible displacements</li>
+                <li><strong>Multi-scale pyramid alignment:</strong> For larger TIF images (~3000x1000 pixels), coarse-to-fine pyramid approach for computational efficiency</li>
+            </ul>
+            
+            <p>The core process for all images follows these steps:</p>
+            <ol>
+                <li><strong>Channel Extraction:</strong> Divide the glass plate image into three equal vertical sections (B, G, R from top to bottom)</li>
+                <li><strong>Reference Selection:</strong> Use the Blue channel as the fixed reference</li>
+                <li><strong>Alignment:</strong> Find optimal (dy, dx) displacement vectors to align Green and Red channels to Blue</li>
+                <li><strong>Reconstruction:</strong> Combine aligned channels into final RGB image</li>
+                <li><strong>Post-processing:</strong> Apply contrast normalization and save as JPEG</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2>Single-Scale Alignment (Small Images)</h2>
+            
+            <h3>Exhaustive Search Strategy</h3>
+            <p>For JPG images, I implement a brute-force approach that evaluates all possible displacements within a search window:</p>
+            <ul>
+                <li><strong>Search window:</strong> ±15 pixels in both x and y directions (961 total positions tested)</li>
+                <li><strong>Computational complexity:</strong> O(w²) where w is the window size (manageable for small images)</li>
+                <li><strong>Evaluation region:</strong> Inner 80% of image to avoid border artifacts</li>
+            </ul>
+            
+            <h3>Distance Metrics Implementation</h3>
+            <p>I implemented and compared two alignment metrics:</p>
+            
+            <div class="tech-details">
+                <h4>Sum of Squared Differences (SSD)</h4>
+                <p><code>SSD(A, B) = Σ(A[i,j] - B[i,j])²</code></p>
+                <p>Lower values indicate better alignment. Simple and fast to compute, works well when channels have similar intensity distributions.</p>
+                
+                <h4>Normalized Cross-Correlation (NCC)</h4>
+                <p><code>NCC(A, B) = (A' · B') / (||A'|| × ||B'||)</code></p>
+                <p>Where A' and B' are zero-mean versions: A' = A - mean(A)</p>
+                <p>Higher values (closer to 1) indicate better alignment. More robust to intensity differences between channels.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Multi-Scale Pyramid Alignment (Large Images)</h2>
+            
+            <h3>Pyramid Construction</h3>
+            <p>For TIF images exceeding 1000 pixels in any dimension, single-scale search becomes computationally prohibitive. My pyramid implementation addresses this:</p>
+            
+            <div class="tech-details">
+                <h4>Downsampling Strategy</h4>
+                <ul>
+                    <li><strong>5 pyramid levels:</strong> Original, 1/2, 1/4, 1/8, 1/16 scale</li>
+                    <li><strong>Downsampling method:</strong> Average pooling with 2x2 windows to prevent aliasing</li>
+                    <li><strong>Search window scaling:</strong> Coarse radius = 15 pixels, Fine radius = 3 pixels</li>
+                </ul>
+                
+                <h4>Coarse-to-Fine Refinement</h4>
+                <ul>
+                    <li><strong>Level 4 (coarsest):</strong> Exhaustive search over ±15 pixel window</li>
+                    <li><strong>Levels 3-1:</strong> Scale up previous displacement by 2x, search ±3 pixels around prediction</li>
+                    <li><strong>Level 0 (finest):</strong> Final refinement on full-resolution image</li>
+                </ul>
+                
+            </div>
+            
+            <h3>Algorithm Walkthrough</h3>
+            <p>Here's the step-by-step process for pyramid alignment:</p>
+            
+            <div class="tech-details">
+                <h4>Step 1: Build Image Pyramids</h4>
+                <p>Create downsampled versions of Blue, Green, and Red channels. Each level has half the resolution of the previous level.</p>
+                
+                <h4>Step 2: Coarse Alignment (Level 4)</h4>
+                <p>At the smallest scale (typically ~188x62 pixels for large TIFs):</p>
+                <ul>
+                    <li>Exhaustively search ±15 pixels in both directions</li>
+                    <li>Use NCC metric for robustness to intensity differences</li>
+                    <li>Apply 10% border crop to avoid edge artifacts</li>
+                    <li>Store best displacement: (dy₄, dx₄)</li>
+                </ul>
+                
+                <h4>Step 3: Progressive Refinement (Levels 3-0)</h4>
+                <p>For each finer level:</p>
+                <ul>
+                    <li><strong>Scale prediction:</strong> (dy, dx) ← 2 × (previous_dy, previous_dx)</li>
+                    <li><strong>Local search:</strong> Test (dy±3, dx±3) around scaled prediction</li>
+                    <li><strong>Update displacement:</strong> Store new best alignment</li>
+                </ul>
+                
+                <h4>Step 4: Final Reconstruction</h4>
+                <p>Apply final displacements using numpy's roll operation and combine into RGB image.</p>
+            </div>
+            
+        </div>
+
+        <div class="section">
+            <h2>Results</h2>
+            
+            <h3>Small Images (JPG files)</h3>
+            <div class="image-grid">
+                <div class="image-container">
+                    <img src="results/cathedral.jpg_colorized.jpg" alt="Cathedral colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Cathedral</strong><br>
+                        G offset: (5, 2)<br>
+                        R offset: (12, 3)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/monastery.jpg_colorized.jpg" alt="Monastery colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Monastery</strong><br>
+                        G offset: (-3, 2)<br>
+                        R offset: (3, 2)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/tobolsk.jpg_colorized.jpg" alt="Tobolsk colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Tobolsk</strong><br>
+                        G offset: (3, 3)<br>
+                        R offset: (6, 3)
+                    </div>
+                </div>
+            </div>
+
+            <h3>Large Images (TIF files)</h3>
+            <div class="image-grid">
+                <div class="image-container">
+                    <img src="results/church.tif_colorized.jpg" alt="Church colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Church</strong><br>
+                        G offset: (25, 4)<br>
+                        R offset: (58, -4)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/emir.tif_colorized.jpg" alt="Emir colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Emir</strong><br>
+                        G offset: (49, 24)<br>
+                        R offset: (107, 40)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/harvesters.tif_colorized.jpg" alt="Harvesters colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Harvesters</strong><br>
+                        G offset: (60, 17)<br>
+                        R offset: (124, 14)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/icon.tif_colorized.jpg" alt="Icon colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Icon</strong><br>
+                        G offset: (42, 17)<br>
+                        R offset: (90, 23)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/self_portrait.tif_colorized.jpg" alt="Self Portrait colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Self Portrait</strong><br>
+                        G offset: (78, 29)<br>
+                        R offset: (176, 37)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/melons.tif_colorized.jpg" alt="Melons colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Melons</strong><br>
+                        G offset: (80, 10)<br>
+                        R offset: (177, 13)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/three_generations.tif_colorized.jpg" alt="Three Generations colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Three Generations</strong><br>
+                        G offset: (54, 12)<br>
+                        R offset: (111, 9)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/siren.tif_colorized.jpg" alt="Siren colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Siren</strong><br>
+                        G offset: (49, -6)<br>
+                        R offset: (96, -24)
+                    </div>
+                </div>
+            </div>
+
+            <h3>Additional Results</h3>
+            <div class="image-grid">
+                <div class="image-container">
+                    <img src="results/italil.tif_colorized.jpg" alt="Italil colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Italil</strong><br>
+                        G offset: (-3, -2)<br>
+                        R offset: (76, -8)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/lastochikino.tif_colorized.jpg" alt="Lastochikino colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Lastochikino</strong><br>
+                        G offset: (41, -17)<br>
+                        R offset: (92, -29)
+                    </div>
+                </div>
+                
+                <div class="image-container">
+                    <img src="results/lugano.tif_colorized.jpg" alt="Lugano colorized" loading="lazy">
+                    <div class="image-caption">
+                        <strong>Lugano</strong><br>
+                        G offset: (49, -6)<br>
+                        R offset: (96, -24)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2025 Zane Mogannam | CS180 - UC Berkeley</p>
+        </footer>
+    </div>
+</body>
+</html>

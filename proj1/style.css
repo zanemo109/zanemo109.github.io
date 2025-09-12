@@ -1,0 +1,220 @@
+/* Project 1 Page Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: #ffffff;
+    background: #000000;
+    font-weight: 300;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    background: #111111;
+    border: 1px solid #333333;
+    color: white;
+    padding: 60px 0;
+    text-align: center;
+    margin-bottom: 40px;
+    border-radius: 12px;
+}
+
+.header h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    font-weight: 200;
+    letter-spacing: -0.02em;
+}
+
+.header .subtitle {
+    font-size: 1.2rem;
+    opacity: 0.7;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+}
+
+.nav-back {
+    background: #0066ff;
+    color: white;
+    padding: 12px 24px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 400;
+    display: inline-block;
+    margin-bottom: 30px;
+    transition: all 0.2s ease;
+    border: 1px solid #0066ff;
+}
+
+.nav-back:hover {
+    background: #0052cc;
+    border-color: #0052cc;
+    transform: translateY(-1px);
+}
+
+.section {
+    background: #111111;
+    border: 1px solid #333333;
+    padding: 40px;
+    margin-bottom: 30px;
+    border-radius: 12px;
+    color: #ffffff;
+}
+
+.section h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    font-weight: 300;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+}
+
+.section h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    margin-top: 30px;
+    font-weight: 400;
+    color: #ffffff;
+}
+
+.section p {
+    margin-bottom: 15px;
+    color: #cccccc;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.section ul {
+    margin: 20px 0;
+    padding-left: 30px;
+}
+
+.section li {
+    margin-bottom: 10px;
+    color: #cccccc;
+    line-height: 1.6;
+}
+
+.section li strong {
+    color: #ffffff;
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin: 30px 0;
+}
+
+.image-container {
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.image-container:hover {
+    transform: translateY(-5px);
+    border-color: #555555;
+    box-shadow: 0 10px 30px rgba(0, 102, 255, 0.1);
+}
+
+.image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+.image-caption {
+    padding: 20px;
+    color: #cccccc;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    background: #1a1a1a;
+}
+
+.image-caption strong {
+    color: #ffffff;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+}
+
+.tech-details {
+    background: #0a0a0a;
+    border: 1px solid #222222;
+    padding: 30px;
+    border-radius: 8px;
+    margin: 30px 0;
+}
+
+.tech-details h3 {
+    color: #0066ff;
+    margin-bottom: 15px;
+    font-weight: 400;
+}
+
+.tech-details p {
+    color: #cccccc;
+    line-height: 1.6;
+}
+
+.footer {
+    text-align: center;
+    padding: 40px 0;
+    border-top: 1px solid #333333;
+    margin-top: 60px;
+    color: #888888;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header .subtitle {
+        font-size: 1rem;
+    }
+    
+    .section {
+        padding: 25px;
+    }
+    
+    .image-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .container {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .section h2 {
+        font-size: 1.5rem;
+    }
+    
+    .section h3 {
+        font-size: 1.25rem;
+    }
+}
