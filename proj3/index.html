@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 3A: Image Warping and Mosaicing - Zane Mogannam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Project 3A: Image Warping and Mosaicing</h1>
+            <p class="subtitle">CS180: Intro to Computer Vision and Computational Photography</p>
+            <p class="author">Zane Mogannam</p>
+        </header>
+
+        <section id="part1" class="section">
+            <h2>Part A.1: Shoot and Digitize Pictures</h2>
+            <p>
+                I captured three sets of images by fixing the camera's center of projection and rotating to capture overlapping 
+                views. Each set has 5 images with approximately 50-60% overlap between consecutive frames.
+            </p>
+            
+            <div class="subsection">
+                <h3>Image Set 1: Apartment Complex</h3>
+                <div class="image-grid five-col">
+                    <div class="image-item">
+                        <img src="images/set1/1.JPG" alt="Set 1 Image 1">
+                        <p>Image 1</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set1/2.JPG" alt="Set 1 Image 2">
+                        <p>Image 2</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set1/3.JPG" alt="Set 1 Image 3">
+                        <p>Image 3 (Center)</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set1/4.JPG" alt="Set 1 Image 4">
+                        <p>Image 4</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set1/5.JPG" alt="Set 1 Image 5">
+                        <p>Image 5</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Image Set 2: Stadium</h3>
+                <div class="image-grid five-col">
+                    <div class="image-item">
+                        <img src="images/set2/1.JPG" alt="Set 2 Image 1">
+                        <p>Image 1</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set2/2.JPG" alt="Set 2 Image 2">
+                        <p>Image 2</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set2/3.JPG" alt="Set 2 Image 3">
+                        <p>Image 3 (Center)</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set2/4.JPG" alt="Set 2 Image 4">
+                        <p>Image 4</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set2/5.JPG" alt="Set 2 Image 5">
+                        <p>Image 5</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Image Set 3: Bedroom</h3>
+                <div class="image-grid five-col">
+                    <div class="image-item">
+                        <img src="images/set3/1.JPG" alt="Set 3 Image 1">
+                        <p>Image 1</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set3/2.JPG" alt="Set 3 Image 2">
+                        <p>Image 2</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set3/3.JPG" alt="Set 3 Image 3">
+                        <p>Image 3 (Center)</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set3/4.JPG" alt="Set 3 Image 4">
+                        <p>Image 4</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/set3/5.JPG" alt="Set 3 Image 5">
+                        <p>Image 5</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="part2" class="section">
+            <h2>Part A.2: Recover Homographies</h2>
+            <p>
+                To align images, I implemented a homography computation function that takes point correspondences and solves 
+                for the 3x3 transformation matrix H using least-squares. The homography relates points between images via 
+                p' = Hp, where H has 8 degrees of freedom (9 parameters with the constraint that H₃₃ = 1).
+            </p>
+
+            <div class="code-snippet">
+                <h4>Homography Computation Implementation:</h4>
+                <pre><code>def computeH(im1_pts, im2_pts):
+    n = im1_pts.shape[0]
+    
+    A = []
+    b = []
+    
+    for i in range(n):
+        x, y = im1_pts[i]
+        x_prime, y_prime = im2_pts[i]
+        
+        A.append([x, y, 1, 0, 0, 0, -x*x_prime, -y*x_prime])
+        b.append(x_prime)
+        
+        A.append([0, 0, 0, x, y, 1, -x*y_prime, -y*y_prime])
+        b.append(y_prime)
+    
+    A = np.array(A)
+    b = np.array(b)
+    
+    h, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    
+    H = np.array([
+        [h[0], h[1], h[2]],
+        [h[3], h[4], h[5]],
+        [h[6], h[7], 1]
+    ])
+    
+    return H</code></pre>
+            </div>
+
+            <div class="subsection">
+                <h3>Example 1: Correspondence Points</h3>
+                <div class="image-single">
+                    <img src="website_data/correspondencies_1.png" alt="Correspondences 1">
+                </div>
+                <div class="text-box">
+                    <h4>System of Equations and Recovered Homography:</h4>
+                    <pre>System of equations: A @ h = b
+where A is a 16x8 matrix (8 correspondences x 2 equations each)
+and h contains the 8 unknown parameters of H.
+
+Recovered H:
+[[ 1.10774478e+00  4.18428540e-02 -2.06359239e+02]
+ [ 1.31235790e-01  1.10480637e+00 -5.99264549e+01]
+ [ 1.80174942e-04  6.42458023e-05  1.00000000e+00]]
+</pre>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Example 2: Correspondence Points</h3>
+                <div class="image-single">
+                    <img src="website_data/correspondencies_2.png" alt="Correspondences 2">
+                </div>
+                <div class="text-box">
+                    <h4>Recovered Homography:</h4>
+                    <pre>Recovered H:
+[[ 1.00533231e+00 -9.86623291e-02 -6.90069501e+01]
+ [ 1.00935113e-01  7.91218937e-01  7.24494534e+01]
+ [ 2.00604430e-04 -2.00695973e-04  1.00000000e+00]]</pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="part3" class="section">
+            <h2>Part A.3: Warp the Images</h2>
+            <p>
+                I implemented two image warping functions using inverse warping to avoid holes in the output. The key difference 
+                is in the interpolation method used to sample pixel values from the source image.
+            </p>
+
+            <div class="subsection">
+                <h3>Rectification Example 1: Album Cover</h3>
+                <div class="image-single">
+                    <img src="website_data/rectification_1.png" alt="Rectification 1">
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Rectification Example 2: Poster</h3>
+                <div class="image-single">
+                    <img src="website_data/rectification_2.png" alt="Rectification 2">
+                </div>
+            </div>
+
+            <div class="text-box">
+                <h4>Quality vs Speed Trade-off:</h4>
+                <ul>
+                    <li><strong>Nearest Neighbor:</strong> ~3-5x faster, suitable for real-time applications but produces blocky results</li>
+                    <li><strong>Bilinear:</strong> Higher quality with smooth gradients, worth the extra computation for final outputs</li>
+                    <li>For this project, I used bilinear interpolation for all final mosaics to achieve the best visual quality</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="part4" class="section">
+            <h2>Part A.4: Blend Images into a Mosaic</h2>
+            <p>
+                To create seamless panoramas, I implemented a one-shot stitching approach that warps all images directly 
+                to a central reference frame. This eliminates error accumulation from chained transformations and produces 
+                cleaner results. Alpha blending with distance-based weights ensures smooth transitions at image boundaries.
+            </p>
+
+            <div class="subsection">
+                <h3>Blending Methodology</h3>
+                <div class="text-box">
+                    <h4>One-Shot Mosaic Building:</h4>
+                    <ol>
+                        <li>Choose center image (Image 3) as the reference frame</li>
+                        <li>For each non-reference image:
+                            <ul>
+                                <li>Select 8 correspondences between that image and the reference</li>
+                                <li>Compute homography H that warps the image directly to reference coordinates</li>
+                            </ul>
+                        </li>
+                        <li>Determine canvas size by warping all image corners through their homographies</li>
+                        <li>For each image:
+                            <ul>
+                                <li>Create alpha mask with linear falloff from edges (blend_width=100 pixels)</li>
+                                <li>Warp both image and alpha mask using bilinear interpolation</li>
+                                <li>Accumulate: mosaic_sum += warped_image x warped_alpha</li>
+                                <li>Accumulate: weight_sum += warped_alpha</li>
+                            </ul>
+                        </li>
+                        <li>Normalize: final_mosaic = mosaic_sum / weight_sum</li>
+                    </ol>
+                </div>
+
+            <div class="subsection">
+                <h3>Mosaic 1: Apartment Complex Panorama</h3>
+                <div class="image-single">
+                    <img src="website_data/mosaic_set1.png" alt="Mosaic 1 Result">
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Mosaic 2: Stadium Panorama</h3>
+                <div class="image-single">
+                    <img src="website_data/mosaic_set2.png" alt="Mosaic 2 Result">
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Mosaic 3: Bedroom Panorama</h3>
+                <div class="image-single">
+                    <img src="website_data/mosaic_set3.png" alt="Mosaic 3 Result">
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
+
