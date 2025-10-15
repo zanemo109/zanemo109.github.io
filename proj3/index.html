@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project 3A: Image Warping and Mosaicing - Zane Mogannam</title>
+    <title>Project 3: Image Warping and Mosaicing - Zane Mogannam</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>Project 3A: Image Warping and Mosaicing</h1>
+            <h1>Project 3: Image Warping and Mosaicing</h1>
             <p class="subtitle">CS180: Intro to Computer Vision and Computational Photography</p>
             <p class="author">Zane Mogannam</p>
         </header>
@@ -259,6 +259,158 @@ Recovered H:
                 <h3>Mosaic 3: Bedroom Panorama</h3>
                 <div class="image-single">
                     <img src="website_data/mosaic_set3.png" alt="Mosaic 3 Result">
+                </div>
+            </div>
+        </section>
+
+        <section id="part5" class="section">
+            <h2>Part B: Automatic Feature Detection and Matching</h2>
+            <p>
+                In Part B, I implemented automatic panorama stitching using Harris corner detection, ANMS, feature descriptors, 
+                feature matching with Lowe's ratio test, and RANSAC for homography estimation. This eliminates the need 
+                for manual correspondence selection.
+            </p>
+        </section>
+
+        <section id="partb1" class="section">
+            <h2>Part B.1: Harris Corner Detection</h2>
+            <p>
+                I used the Harris corner detector to find interest points in each image. To ensure good spatial distribution 
+                across the image, I implemented Adaptive Non-Maximal Suppression (ANMS), which selects corners based on their 
+                suppression radius rather than just corner strength.
+            </p>
+
+            <div class="subsection">
+                <h3>Harris Corners Without ANMS</h3>
+                <p>Initial detection finds thousands of corners, heavily clustered in high-texture regions:</p>
+                <div class="image-single">
+                    <img src="website_data_3b/harris_corners_no_anms.png" alt="Harris Corners No ANMS">
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Harris Corners With ANMS</h3>
+                <p>ANMS reduces to 500 well-distributed corners across the entire image:</p>
+                <div class="image-single">
+                    <img src="website_data_3b/harris_corners_anms.png" alt="Harris Corners With ANMS">
+                </div>
+            </div>
+
+            <div class="text-box">
+                <h4>ANMS Algorithm:</h4>
+                <p>For each corner i, compute its suppression radius r<sub>i</sub> = minimum distance to a significantly stronger corner. 
+                Select the N corners with largest suppression radii, ensuring spatial diversity.</p>
+            </div>
+        </section>
+
+        <section id="partb2" class="section">
+            <h2>Part B.2: Feature Descriptor Extraction</h2>
+            <p>
+                For each detected corner, I extract an 8x8 descriptor by sampling a 40x40 window around the corner and downsampling 
+                to 8x8 (5-pixel spacing). Each descriptor is bias/gain normalized (mean=0, std=1) to be invariant to lighting changes.
+            </p>
+
+            <div class="subsection">
+                <h3>Example Feature Descriptors</h3>
+                <div class="image-single">
+                    <img src="website_data_3b/feature_descriptors.png" alt="Feature Descriptors">
+                </div>
+                <p>The 40x40 -> 8x8 downsampling creates low-frequency descriptors that are less sensitive to exact corner localization.</p>
+            </div>
+        </section>
+
+        <section id="partb3" class="section">
+            <h2>Part B.3: Feature Matching</h2>
+            <p>
+                I match features between image pairs through the following method: for each feature in image 1, find its nearest neighbor 
+                (1-NN) and second-nearest neighbor (2-NN) in image 2. Accept the match only if distance(1-NN) / distance(2-NN) < 0.8, 
+                which filters ambiguous matches.
+            </p>
+
+            <div class="subsection">
+                <h3>Feature Matches Before RANSAC</h3>
+                <div class="image-single">
+                    <img src="website_data_3b/feature_matches.png" alt="Feature Matches">
+                </div>
+                <p>The colored lines show matched features. While most are correct, some outliers exist.</p>
+            </div>
+        </section>
+
+        <section id="partb4" class="section">
+            <h2>Part B.4: RANSAC Homography Estimation</h2>
+            <p>
+                To estimate homographies despite outlier matches, I implemented 4-point RANSAC. In each iteration, 
+                I randomly sample 4 correspondences, compute a homography, and count inliers (matches within 5 pixels). 
+                The homography with the most inliers is selected and refined using all inliers.
+            </p>
+
+            <div class="subsection">
+                <h3>RANSAC Results: Inliers vs Outliers</h3>
+                <div class="image-single">
+                    <img src="website_data_3b/ransac_inliers.png" alt="RANSAC Inliers">
+                </div>
+                <p>Green lines show inliers (geometrically consistent matches), red lines show outliers rejected by RANSAC. 
+                Typical inlier rates: 85-95%.</p>
+            </div>
+
+            <div class="text-box">
+                <h4>Implementation Details:</h4>
+                <ul>
+                    <li><strong>RANSAC iterations:</strong> 5000</li>
+                    <li><strong>Inlier threshold:</strong> 5 pixels</li>
+                    <li><strong>Ratio test threshold:</strong> 0.75-0.8</li>
+                    <li><strong>Stitching method:</strong> Reference frame (center image) to avoid error accumulation</li>
+                    <li><strong>Blending:</strong> Distance-based feathering for seamless transitions</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="partb5" class="section">
+            <h2>Part B.4: Automatic Panorama Results</h2>
+            <p>
+                Using the complete automatic pipeline (Harris + ANMS + Descriptors + Matching + RANSAC), I created panoramas 
+                for all three image sets. Below are comparisons between manual (Part A) and automatic (Part B) stitching.
+            </p>
+
+            <div class="subsection">
+                <h3>Set 1: Apartment Complex</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <img src="website_data/mosaic_set1.png" alt="Set 1 Manual">
+                        <p>Manual Stitching (Part A)</p>
+                    </div>
+                    <div class="comparison-item">
+                        <img src="website_data_3b/mosaic_set1_auto.png" alt="Set 1 Automatic">
+                        <p>Automatic Stitching (Part B)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Set 2: Stadium</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <img src="website_data/mosaic_set2.png" alt="Set 2 Manual">
+                        <p>Manual Stitching (Part A)</p>
+                    </div>
+                    <div class="comparison-item">
+                        <img src="website_data_3b/mosaic_set2_auto.png" alt="Set 2 Automatic">
+                        <p>Automatic Stitching (Part B)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Set 3: Bedroom</h3>
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <img src="website_data/mosaic_set3.png" alt="Set 3 Manual">
+                        <p>Manual Stitching (Part A)</p>
+                    </div>
+                    <div class="comparison-item">
+                        <img src="website_data_3b/mosaic_set3_auto.png" alt="Set 3 Automatic">
+                        <p>Automatic Stitching (Part B)</p>
+                    </div>
                 </div>
             </div>
         </section>

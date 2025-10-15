@@ -220,6 +220,83 @@ body {
     font-size: 0.95rem;
 }
 
+/* Comparison Grid for Manual vs Automatic */
+.comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.comparison-item {
+    text-align: center;
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #333333;
+    transition: transform 0.3s ease;
+}
+
+.comparison-item:hover {
+    transform: translateY(-3px);
+    border-color: #555555;
+}
+
+.comparison-item img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.comparison-item p {
+    font-size: 1rem;
+    color: #cccccc;
+    font-weight: 400;
+    margin: 10px 0 0 0;
+}
+
+/* Text Box Styles */
+.text-box {
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.text-box h4 {
+    color: #0066ff;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.text-box pre {
+    background: #000000;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: #ffffff;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    border: 1px solid #222222;
+}
+
+.text-box ul {
+    margin-left: 20px;
+}
+
+.text-box ol {
+    margin-left: 20px;
+}
+
+.text-box li {
+    margin-bottom: 10px;
+    color: #cccccc;
+    line-height: 1.6;
+}
+
 /* Code Snippet Styles */
 .code-snippet {
     background: #0a0a0a;
@@ -392,6 +469,10 @@ ul li strong {
     .image-grid.three-col,
     .image-grid.four-col,
     .image-grid.five-col {
+        grid-template-columns: 1fr;
+    }
+    
+    .comparison-grid {
         grid-template-columns: 1fr;
     }
     
