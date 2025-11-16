@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 4: Neural Radiance Field - Zane Mogannam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Project 4: Neural Radiance Field</h1>
+            <p class="subtitle">CS180: Intro to Computer Vision and Computational Photography</p>
+            <p class="author">Zane Mogannam</p>
+        </header>
+
+        <section id="overview" class="section">
+            <h2>Project Overview</h2>
+            <p>
+                This project explores Neural Radiance Fields (NeRF), a powerful technique for representing 3D scenes 
+                as continuous volumetric functions. I implemented a complete NeRF pipeline from scratch, including 
+                camera calibration, ray generation, volume rendering, and neural network training. The project progresses 
+                from fitting a simple 2D neural field to an image, to building a full 3D NeRF from multi-view images, 
+                culminating in creating my own NeRF from a self-captured dataset.
+            </p>
+        </section>
+
+        <section id="part0" class="section">
+            <h2>Part 0: Camera Calibration and 3D Scanning</h2>
+            
+            <div class="subsection">
+                <h3>Overview</h3>
+                <p>
+                    In this part, I calibrated my iPhone camera using ArUco tags and captured a 3D scan of my own object. 
+                </p>
+            </div>
+
+            <div class="subsection">
+                <h3>Part 0.1-0.3: Camera Calibration and Pose Estimation</h3>
+                <p>
+                    I captured 45 calibration images and used <code>cv2.calibrateCamera()</code> to compute camera intrinsics. 
+                    For the object scan, I captured 52 images of a my teddy bear figure with a single ArUco tag, then used 
+                    <code>cv2.solvePnP()</code> to estimate the camera pose for each image. The recovered camera-to-world 
+                    transformations allow us to know exactly where each photo was taken in 3D space.
+                </p>
+
+                <h4>Camera Frustums Visualization</h4>
+                <p>Using Viser, I visualized all camera poses as 3D frustums. The images show the spatial distribution 
+                   of camera positions around the captured object:</p>
+                
+                <div class="image-grid two-col">
+                    <div class="image-item">
+                        <img src="images/deliverables/viser_server_1.png" alt="Viser Visualization 1">
+                        <p>Camera Frustums - View 1</p>
+                    </div>
+                    <div class="image-item">
+                        <img src="images/deliverables/viser_server_2.png" alt="Viser Visualization 2">
+                        <p>Camera Frustums - View 2</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Part 0.4: Dataset Creation</h3>
+                <p>
+                    After pose estimation, I undistorted all images using <code>cv2.undistort()</code> and packaged them 
+                    into a <code>.npz</code> dataset format. I used <code>cv2.getOptimalNewCameraMatrix()</code> to handle 
+                    black boundaries from undistortion, cropping images to the valid ROI and updating the intrinsics matrix 
+                    accordingly. The dataset was split into training (40 images), validation (6 images), and test (6 novel views) sets.
+                </p>
+
+                <div class="text-box">
+                    <h4>Implementation Details:</h4>
+                    <ul>
+                        <li><strong>Object scan images:</strong> 52 images at varying angles around my teddy bear figure</li>
+                        <li><strong>Tag size:</strong> 0.06m x 0.06m</li>
+                        <li><strong>Camera:</strong> iPhone 14 camera (rear camera, no zoom)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="part1" class="section">
+            <h2>Part 1: Fit a Neural Field to a 2D Image</h2>
+            
+            <div class="subsection">
+                <h3>Network Architecture</h3>
+                <p>
+                    I implemented a Multi-Layer Perceptron (MLP) with sinusoidal positional encoding to represent a 2D image 
+                    as a continuous neural field. The network takes 2D pixel coordinates as input and outputs RGB color values.
+                </p>
+
+                <div class="text-box">
+                    <h4>Model Architecture:</h4>
+                    <ul>
+                        <li><strong>Input:</strong> 2D coordinates (x, y) normalized to [0, 1]</li>
+                        <li><strong>Positional Encoding:</strong> L=10 frequency levels, expanding 2D → 42D</li>
+                        <li><strong>Hidden layers:</strong> 3 layers with width 256</li>
+                        <li><strong>Activation:</strong> ReLU for hidden layers, Sigmoid for output</li>
+                        <li><strong>Output:</strong> RGB values in [0, 1]</li>
+                        <li><strong>Loss:</strong> MSE loss between predicted and ground truth colors</li>
+                        <li><strong>Optimizer:</strong> Adam with learning rate 1e-2</li>
+                        <li><strong>Training:</strong> 2000 iterations with batch size 10,000 pixels</li>
+                    </ul>
+                </div>
+
+                <p>
+                    The sinusoidal positional encoding applies the transformation: 
+                    PE(p) = [p, sin(2⁰πp), cos(2⁰πp), sin(2¹πp), cos(2¹πp), ..., sin(2^(L-1)πp), cos(2^(L-1)πp)]
+                    This expands the input dimensionality and enables the network to learn high-frequency details.
+                </p>
+            </div>
+
+            <div class="subsection">
+                <h3>Training Results</h3>
+                
+                <h4>Test Image Training Progression</h4>
+                <div class="image-single">
+                    <img src="images/deliverables/part_1_training_progression_test_image.png" alt="Part 1 Test Image Training">
+                </div>
+
+                <h4>Custom Image Training Progression</h4>
+                <div class="image-single">
+                    <img src="images/deliverables/part_1_training_progression_my_image.png" alt="Part 1 Custom Image Training">
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Hyperparameter Analysis</h3>
+                <p>
+                    I explored the effect of network width and maximum positional encoding frequency on reconstruction quality.
+                </p>
+
+                <div class="image-single">
+                    <img src="images/deliverables/part_1_hyperparameter_comparison.png" alt="Hyperparameter Comparison">
+                    <p>2x2 grid showing results for different (L_max, width) combinations: 
+                       (2, 64), (2, 256), (10, 64), (10, 256).</p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>PSNR Curve</h3>
+                <div class="image-single">
+                    <img src="images/deliverables/part_1_psnr_curve_test_image.png" alt="Part 1 PSNR Curve">
+                </div>
+            </div>
+        </section>
+
+        <section id="part2" class="section">
+            <h2>Part 2: Fit a Neural Radiance Field from Multi-view Images</h2>
+            
+            <div class="subsection">
+                <h3>Part 2.1: Create Rays from Cameras</h3>
+                <p>
+                    I implemented three key transformations to convert pixel coordinates to 3D rays:
+                </p>
+
+                <div class="text-box">
+                    <h4>Transformation Pipeline:</h4>
+                    <ol>
+                        <li><strong>Camera-to-World Transform:</strong> <code>x_world = c2w @ x_camera</code> converts 
+                            points from camera space to world space using the 4×4 extrinsic matrix</li>
+                        <li><strong>Pixel-to-Camera:</strong> Given pixel (u, v) and depth s, compute 
+                            <code>x_camera = K^(-1) @ [u*s, v*s, s]</code> to get 3D camera coordinates</li>
+                        <li><strong>Pixel-to-Ray:</strong> Ray origin is camera position <code>c2w[:3, 3]</code>, 
+                            ray direction is normalized vector from origin through pixel at depth=1</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Part 2.2: Sampling Points Along Rays</h3>
+                <p>
+                    I sample 64 points along each ray between near=2.0 and far=6.0 planes.
+                </p>
+            </div>
+
+            <div class="subsection">
+                <h3>Part 2.3: Visualization of Rays and Samples</h3>
+                <div class="image-single">
+                    <img src="images/deliverables/part2_rays_samples_visualization.png" alt="Rays and Samples Visualization">
+                    <p>Visualization of 100 sampled rays (shown as lines) with sample points (shown as white dashes along the lines) in 3D space. </p>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Part 2.4: Neural Radiance Field Architecture</h3>
+                <p>
+                    The NeRF MLP takes 3D position and 2D viewing direction as input, outputting volume density (σ) and 
+                    RGB color. The architecture uses skip connections and separate branches for density and color prediction.
+                </p>
+
+                <div class="text-box">
+                    <h4>NeRF Network Architecture:</h4>
+                    <ul>
+                        <li><strong>Position encoding:</strong> L=10 (3D → 63D)</li>
+                        <li><strong>Direction encoding:</strong> L=4 (3D → 27D)</li>
+                        <li><strong>Position branch:</strong> 63D → 256 → 256 → skip(+63D) → 256 → 256</li>
+                        <li><strong>Density head:</strong> 256 → 1 (with ReLU activation)</li>
+                        <li><strong>Color branch:</strong> 256 + 27D direction → 128 → 3 (with Sigmoid)</li>
+                        <li><strong>Skip connection:</strong> Concatenate input at layer 4 to preserve high-frequency details</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Part 2.5: Volume Rendering</h3>
+                <p>
+                    I implemented the discrete volume rendering equation to composite colors along each ray. For each sample 
+                    point, we compute transmittance (probability ray reaches that point without hitting anything) and 
+                    alpha (probability of terminating at that point).
+                </p>
+            </div>
+
+            <div class="subsection">
+                <h3>Lego NeRF Training Results</h3>
+                
+                <h4>Training Progression</h4>
+                <div class="image-single">
+                    <img src="images/deliverables/lego_training_progression.png" alt="Lego Training Progression">
+                    <p>Novel view rendering at iterations 0, 250, 500, 750, and 1000. The NeRF progressively learns 
+                       the 3D structure and appearance of the lego bulldozer.</p>
+                </div>
+
+                <h4>Validation PSNR Curve</h4>
+                <div class="image-single">
+                    <img src="images/deliverables/lego_psnr_curve.png" alt="Lego PSNR Curve">
+                    <p>PSNR on validation set improves steadily, reaching 23+ dB after 1000 iterations. 
+                       My implementation used Adam optimizer (lr=5e-4) with 10K rays per batch.</p>
+                </div>
+
+                <h4>Novel View Synthesis</h4>
+                <div class="image-single">
+                    <img src="images/deliverables/lego_novel_views.gif" alt="Lego Novel Views">
+                    <p>Spherical rendering using the 60 test camera poses. </p>
+                </div>
+
+                <div class="text-box">
+                    <h4>Training Details:</h4>
+                    <ul>
+                        <li><strong>Dataset:</strong> 100 training images (200×200 pixels)</li>
+                        <li><strong>Batch size:</strong> 10,000 rays per iteration</li>
+                        <li><strong>Iterations:</strong> 1000 gradient steps</li>
+                        <li><strong>Optimizer:</strong> Adam with learning rate 5e-4</li>
+                        <li><strong>Samples per ray:</strong> 64 points between near=2.0 and far=6.0</li>
+                        <li><strong>Final PSNR:</strong> 23.4 dB on validation set</li>
+                        <li><strong>Training time:</strong> ~10 minutes on Apple M3 MPS</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="part26" class="section">
+            <h2>Part 2.6: Training NeRF on My Own Data</h2>
+            
+            <div class="subsection">
+                <h3>Overview</h3>
+                <p>
+                    Using the dataset I created in Part 0, I trained a NeRF on my teddy bear figure. Unfortunately, the results were too horrific to show in this report. I decided to use the Lafufu dataset released by staff instead.
+                </p>
+
+                <div class="text-box">
+                    <h4>Hyperparameter Changes:</h4>
+                    <ul>
+                        <li><strong>Near/far planes:</strong> Changed from (2.0, 6.0) to (0.35, 0.75)</li>
+                        <li><strong>Samples per ray:</strong> Increased from 32 to 64 </li>
+                        <li><strong>Training iterations:</strong> Extended to 3000 iterations for full convergence</li>
+                        <li><strong>Learning rate:</strong> Used 5e-4 (same as Lego)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Training Progression</h3>
+                <div class="image-single">
+                    <img src="images/deliverables/lafufu_training_progression.png" alt="Labubu Training Progression">
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Training Loss Curve</h3>
+                <div class="image-single">
+                    <img src="images/deliverables/lafufu_training_loss.png" alt="Labubu Training Loss">
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>Novel View Synthesis</h3>
+                <div class="image-single-large">
+                    <img src="images/deliverables/lafufu_novel_views_vertical (1).gif" alt="Labubu Novel Views">
+                    <p>Novel view synthesis showing the Labubu figure from a vertical rotation.</p>
+                </div>
+            </div>
+
+        </section>
+
+        <footer class="footer">
+            <p>© Zane Mogannam | CS180 Project 4 | UC Berkeley</p>
+            <p><a href="../index.html">← Back to Projects</a></p>
+        </footer>
+    </div>
+</body>
+</html>
+
